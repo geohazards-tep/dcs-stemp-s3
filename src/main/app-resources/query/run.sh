@@ -37,11 +37,12 @@ function main() {
   [ -z ${startdate} ] && exit $ERR_PARAM
   [ -z ${enddate} ] && exit $ERR_PARAM
  
-  IFS=',' read volcano v_lon v_lat station region < <( cat ${DB_PATH}/volcanoes | grep "${volcano,,}" )
+  IFS=',' read volcano v_lon v_lat utm_zone station region < <( cat ${DB_PATH}/volcanoes | grep "${volcano,,}" )
   [ -z "${volcano}" ] && exit $ERR_VOLCANO_NOT_FOUND
 
   ciop-log "INFO" "Volcano name: ${volcano}"
   ciop-log "INFO" "Volcano coordinates: ${v_lon} ${v_lat}"
+  ciop-log "INFO" "Volcano UTM Zone: ${utm_zone}"
   
   local geom="POINT(${v_lon} ${v_lat})"
 
@@ -71,8 +72,8 @@ function main() {
       
     cat ${TMPDIR}/opensearch_response.txt | while read self identifier enddate
     do
-      ciop-log "INFO" "Publishing to the stemp node: ${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom}"
-      echo "${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom}" | ciop-publish -s
+      ciop-log "INFO" "Publishing to the stemp node: ${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}"
+      echo "${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}" | ciop-publish -s
     done
     
   else

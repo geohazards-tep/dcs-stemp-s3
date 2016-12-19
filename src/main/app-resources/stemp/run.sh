@@ -2,9 +2,12 @@
 
 source /application/libexec/functions.sh
 
-export LM_LICENSE_FILE=1700@idl.terradue.int
+export LM_LICENSE_FILE=1700@idl.terradue.com
 export MODTRAN_BIN=/opt/MODTRAN-5.4.0
-export STEMP_BIN=/opt/STEMP/bin
+#export STEMP_BIN=/opt/STEMP/bin
+export STEMP_BIN=/data/code/code_S3
+export SNAP_BIN=/opt/snap-3.0/bin
+export IDL_BIN=/usr/local/bin
 export PROCESSING_HOME=${TMPDIR}/PROCESSING
 export EMISSIVITY_AUX_PATH=${_CIOP_APPLICATION_PATH}/aux/INPUT_SRF
 
@@ -18,6 +21,8 @@ function main() {
   local region=$6
   local volcano=$7
   local geom=$8
+  # UTM_ZONE variable comes from the dcs-stemp-l8 application. In this case we get the UTM_ZONE from the volcanoes DB.
+  local UTM_ZONE=$9
 
   local v_lon=$( echo "${geom}" | sed -n 's#POINT(\(.*\)\s.*)#\1#p')
   local v_lat=$( echo "${geom}" | sed -n 's#POINT(.*\s\(.*\))#\1#p')
@@ -32,6 +37,7 @@ function main() {
   ciop-log "INFO" "Reference atmospheric station: ${station}, ${region}"
   ciop-log "INFO" "Volcano name: ${volcano}"
   ciop-log "INFO" "Geometry in WKT format: ${geom}"
+  ciop-log "INFO" "UTM Zone: ${utm_zone}"
   ciop-log "INFO" "------------------------------------------------------------"
 
   ciop-log "INFO" "Preparing the STEMP environment"
@@ -102,58 +108,44 @@ function main() {
   ciop-log "INFO" "------------------------------------------------------------"
 
   ciop-log "INFO" "Checking the UTM Zone"
-
-  case ${mission,,} in
-    landsat8)
-        UTM_ZONE=$( sed -n 's#^.*UTM_ZONE\s=\s\(.*\)$#\1#p' ${PROCESSING_HOME}/${identifier}_MTL.txt )
-    ;;
-    aster)
-        UTM_ZONE=$( gdalinfo ${PROCESSING_HOME}/${identifier}.hdf | sed -n 's#.*UTMZONENUMBER=\(.*\)#\1#p' )
-    ;;
-  esac
-
   ciop-log "INFO" "UTM Zone: ${UTM_ZONE}"
-
+  
   # If the volcano is located in southern hemisphere
   if [ $( echo "${v_lat} < 0" | bc ) -eq 1 ]; then
-
-    ciop-log "INFO" "Converting DEM to UTM Zone S"
-    gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +south +datum=WGS84" ${cropped_dem} ${PROCESSING_HOME}/dem_UTM.TIF 1>&2
-
-    if [ "${mission,,}" = "landsat8" ]; then
-      ciop-log "INFO" "Setting the proper UTM Zone ${UTM_ZONE} for the B10 TIF"
-      gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs" ${PROCESSING_HOME}/${identifier}_B10.TIF ${PROCESSING_HOME}/${identifier}_B10_S.TIF 1>&2
-      mv ${PROCESSING_HOME}/${identifier}_B10_S.TIF ${PROCESSING_HOME}/${identifier}_B10.TIF
-      ciop-log "INFO" "------------------------------------------------------------"
-
-      ciop-log "INFO" "Setting the proper UTM Zone ${UTM_ZONE} for the emissivity file"
-      gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +south +datum=WGS84" ${PROCESSING_HOME}/${volcano}.tif ${PROCESSING_HOME}/${volcano}_S.tif 1>&2
-      mv ${PROCESSING_HOME}/${volcano}_S.tif ${PROCESSING_HOME}/${volcano}.tif
-      ciop-log "INFO" "------------------------------------------------------------"
-    fi
-    ciop-log "INFO" "------------------------------------------------------------"
+    n_s="south"
   else
-    ciop-log "INFO" "Converting DEM to UTM Zone N"
-    gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +datum=WGS84" ${cropped_dem} ${PROCESSING_HOME}/dem_UTM.TIF 1>&2
-    ciop-log "INFO" "------------------------------------------------------------"
+    n_s="north"
   fi
+  
+  ciop-log "INFO" "Converting product to UTM"
+  ${SNAP_BIN}/gpt Resample -SsourceProduct=${product}/xfdumanifest.xml -Pdownsampling=First -PflagDownsampling=First -PreferenceBand=S9_BT_in -Pupsampling=Nearest -PresampleOnPyramidLevels=true -t  ${PROCESSING_HOME}/temp.dim
+  ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/temp_res.dim
+  ${SNAP_BIN}/gpt Reproject -Ssource=${PROCESSING_HOME}/temp_res.dim -Pcrs=AUTO:42001 -Presampling=Nearest -t ${PROCESSING_HOME}/temp_rip.dim
+  ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp_rip.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/${identifier:0:31} -f GeoTiff
+  gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +${n_s} +datum=WGS84"  ${PROCESSING_HOME}/${identifier:0:31}.tif ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}.tif
+  
+  # temp TODO
+  ls ${PROCESSING_HOME}
+  
+  ciop-log "INFO" "Converting product to 1km resolution"
+  gdalwarp -tr 1000 -1000 ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}.tif ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}${volcano}_1km.TIF
+  
+  ciop-log "INFO" "Converting DEM to proper UTM Zone"
+  gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +${n_s} +datum=WGS84" ${cropped_dem} ${PROCESSING_HOME}/dem_UTM.TIF 1>&2
 
-  ciop-log "INFO" "Setting DEM resolution to 90m"
-  gdalwarp -tr 90 -90 ${PROCESSING_HOME}/dem_UTM.TIF ${PROCESSING_HOME}/dem_UTM_90.TIF 1>&2
+  ciop-log "INFO" "Setting DEM resolution to 1km"
+  gdalwarp -tr 1000 -1000 ${PROCESSING_HOME}/dem_UTM.TIF ${PROCESSING_HOME}/dem_UTM_1km.TIF 1>&2
   ciop-log "INFO" "------------------------------------------------------------"
+  
+  ciop-log "INFO" "Copying Sentinel 3 instrument response function"
+  
+  cp ${EMISSIVITY_AUX_PATH}/SRF_S3_CH8-9.txt ${PROCESSING_HOME}
 
   ciop-log "INFO" "Preparing file_input.cfg"
-  case ${mission,,} in
-    landsat8)
-         echo "$( basename ${identifier})_B10.TIF" >> ${PROCESSING_HOME}/file_input.cfg
-    ;;
-    aster)
-        echo "$( basename ${identifier}).hdf" >> ${PROCESSING_HOME}/file_input.cfg
-    ;;
-  esac
+  echo "${identifier:0:31}_${UTM_ZONE}${n_s}${volcano}_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
 
   basename ${profile} >> ${PROCESSING_HOME}/file_input.cfg
-  echo "dem_UTM_90.TIF" >> ${PROCESSING_HOME}/file_input.cfg
+  echo "dem_UTM_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
   echo "${volcano}.tif" >> ${PROCESSING_HOME}/file_input.cfg
 
   ciop-log "INFO" "file_input.cfg content:"
@@ -167,14 +159,14 @@ function main() {
   ciop-log "INFO" "------------------------------------------------------------"
 
   if [ "${DEBUG}" = "true" ]; then
-    ciop-publish -m ${PROCESSING_HOME}/*_B10.TIF || return $?
+    ciop-publish -m ${PROCESSING_HOME}/*.TIF || return $?
     ciop-publish -m ${PROCESSING_HOME}/*txt || return $?
     ciop-publish -m ${PROCESSING_HOME}/dem* || return $?
     ciop-publish -m ${PROCESSING_HOME}/*${volcano}.tif || return $?
   fi
 
   ciop-log "INFO" "Starting STEMP core"
-  /usr/local/bin/idl -rt=${STEMP_BIN}/STEMP.sav -IDL_DEVICE Z
+  ${IDL_BIN}/idl -rt=${STEMP_BIN}/STEMP_S3.sav -IDL_DEVICE Z
 
   ciop-log "INFO" "STEMP core finished"
   ciop-log "INFO" "------------------------------------------------------------"
@@ -185,32 +177,28 @@ function main() {
   string_inp=$(head -n 1 file_input.cfg)
   leng=${#string_inp}
   generateQuicklook ${PROCESSING_HOME}/${string_inp:0:leng-4}_TEMP.tif ${PROCESSING_HOME}
-  #gdal_translate -scale -10 10 0 255 -ot Byte -of PNG ${string_inp:0:leng-4}_TEMP.tif ${string_inp:0:leng-4}_TEMP.png
-  #listgeo -tfw ${string_inp:0:leng-4}_TEMP.tif
-  #mv ${string_inp:0:leng-4}_TEMP.tfw ${string_inp:0:leng-4}_TEMP.pngw
 
   ciop-log "INFO" "Quicklooks generated:"
   ls -l ${PROCESSING_HOME}/*TEMP.png* 1>&2
   ciop-log "INFO" "------------------------------------------------------------"
+  
+  METAFILE=${PROCESSING_HOME}/${string_inp:0:leng-4}_TEMP.tif.properties
+  DATETIME=${string_inp:3:4}-${string_inp:7:2}-${string_inp:9:5}:${string_inp:14:2}:${string_inp:16:2}
 
-METAFILE=${PROCESSING_HOME}/${identifier}_B10_TEMP.tif.properties
-SATELLITE=$(sed -n 's#^.*SPACECRAFT_ID\s=\s\(.*\)$#\1#p' ${PROCESSING_HOME}/${identifier}_MTL.txt)
-DATATIME=$(sed -n 's#^.*FILE_DATE\s=\s\(.*\)$#\1#p' ${PROCESSING_HOME}/${identifier}_MTL.txt)
-SCENE=$(sed -n 's#^.*LANDSAT_SCENE_ID\s=\s\(.*\)$#\1#p' ${PROCESSING_HOME}/${identifier}_MTL.txt)
-echo "#Predefined Metadata" >> ${METAFILE}
-echo "title=STEMP - Surface Temperature Map - ${SCENE:1:21}" >> ${METAFILE}
-echo "date=${DATATIME}" >> ${METAFILE}
-echo "Volcano=${volcano}" >> ${METAFILE}
-echo "#Input scene" >> ${METAFILE}
-echo "Satellite=${SATELLITE:1:9}" >> ${METAFILE}
-echo "Scene=${SCENE:1:21}" >> ${METAFILE}
-echo "#STEMP Parameters" >> ${METAFILE}
-echo "Emissivity=ASTER05" >> ${METAFILE}
-echo "Atmospheric\ Profile=${profile}" >> ${METAFILE}
-echo "DEM\ Spatial\ Resolution=90mt" >> ${METAFILE}
-echo "Temperature\ Unit=degree" >> ${METAFILE}
-echo "#EOF" >> ${METAFILE}
-
+  echo "#Predefined Metadata" >> ${METAFILE}
+  echo "title=STEMP - Surface Temperature Map" >> ${METAFILE}
+  #echo "date=${identifier:16:30}" >> ${METAFILE}
+  echo "date=${DATETIME}" >> ${METAFILE}
+  echo "Volcano=${volcano}"  >> ${METAFILE}
+  echo "#Input scene" >> ${METAFILE}
+  echo "Satellite=Sentinel3" >> ${METAFILE}
+  echo "#STEMP Parameters" >> ${METAFILE}
+  echo "Emissivity=Computed with TES algorithm"  >> ${METAFILE}
+  echo "Atmospheric\ Profile=${profile}"  >> ${METAFILE}
+  echo "DEM\ Spatial\ Resolution=1Km"  >> ${METAFILE}
+  echo "Temperature\ Unit=degree" >> ${METAFILE}
+  echo "#EOF"  >> ${METAFILE}
+  
   ciop-log "INFO" "Staging-out results ..."
   ciop-publish -m ${PROCESSING_HOME}/*TEMP.tif || return $?
   ciop-publish -m ${PROCESSING_HOME}/*TEMP.png* || return $?
@@ -226,9 +214,9 @@ echo "#EOF" >> ${METAFILE}
   ciop-log "INFO" "**** STEMP node finished ****"
 }
 
-while IFS=',' read ref identifier mission date station region volcano geom
+while IFS=',' read ref identifier mission date station region volcano geom utm_zone
 do
-    main "${ref}" "${identifier}" "${mission}" "${date}" "${station}" "${region}" "${volcano}" "${geom}" || exit $?
+    main "${ref}" "${identifier}" "${mission}" "${date}" "${station}" "${region}" "${volcano}" "${geom}" "${utm_zone}" || exit $?
 done
 
 exit ${SUCCESS}
