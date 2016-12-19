@@ -47,7 +47,9 @@
                 <configuration>
                   <!-- Set here the dependencies installed with 'sudo yum install'-->
                   <requires>
-                    <require>bash</require>
+                    <require>idl</require>
+                    <require>snap-5.0</require>
+                    <require>MODTRAN</require>
                   </requires>
                 </configuration>
               </execution>
