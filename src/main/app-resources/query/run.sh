@@ -56,28 +56,49 @@ function main() {
   ciop-log "INFO" "Nearest atmosferic station: ${station},${region}"
   ciop-log "INFO" "Geometry in WKT: ${geom}"
 
-  ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://catalog.terradue.com/${mission,,}/search?geom=${geom}\""
- 
-  opensearch-client \
-    -p "start=${startdate}" \
-    -p "stop=${enddate}" \
-    "https://catalog.terradue.com/${mission,,}/search?geom=${geom}" \
-    self,identifier,enddate | tr "," " " > ${TMPDIR}/opensearch_response.txt
-  res=$?
-  [ ${res} -ne 0 ] && return ${ERR_GET_DATA}
-  
-  count=$( wc -l < ${TMPDIR}/opensearch_response.txt )
-  
-  if [ ${count} -gt 0 ]; then
-      
-    cat ${TMPDIR}/opensearch_response.txt | while read self identifier enddate
-    do
-      ciop-log "INFO" "Publishing to the stemp node: ${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}"
-      echo "${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}" | ciop-publish -s
-    done
+  if [ "${LOCAL_DATA}" == "true" ]; then
+    
+    local local_file_identifier="$(ciop-getparam local_file_identifier)"
+    identifier=${local_file_identifier}
+    enddate=${local_file_identifier:16:}
+    
+    local year=${local_file_identifier:16:4}
+    local month=${local_file_identifier:20:2}
+    local day=${local_file_identifier:22:2}
+    local hour=${local_file_identifier:25:2}
+    local minute=${local_file_identifier:27:2}
+    
+    local enddate="${year}-${month}-${day}T${hour}:${minute}"
+    
+    ciop-log "INFO" "Publishing to the stemp node: ${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}"
+    echo "dummy,${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}" | ciop-publish -s
     
   else
-    return ${ERR_DATA_NOT_FOUND}
+    
+    ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://catalog.terradue.com/${mission,,}/search?geom=${geom}\""
+ 
+    opensearch-client \
+      -p "start=${startdate}" \
+      -p "stop=${enddate}" \
+      "https://catalog.terradue.com/${mission,,}/search?geom=${geom}" \
+      self,identifier,enddate | tr "," " " > ${TMPDIR}/opensearch_response.txt
+    res=$?
+    [ ${res} -ne 0 ] && return ${ERR_GET_DATA}
+  
+    count=$( wc -l < ${TMPDIR}/opensearch_response.txt )
+  
+    if [ ${count} -gt 0 ]; then
+      
+      cat ${TMPDIR}/opensearch_response.txt | while read self identifier enddate
+      do
+        ciop-log "INFO" "Publishing to the stemp node: ${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}"
+        echo "${self},${identifier},${mission,,},${enddate},${station},${region},${volcano},${geom},${utm_zone}" | ciop-publish -s
+      done
+    
+    else
+      return ${ERR_DATA_NOT_FOUND}
+    fi
+    
   fi
 
 } 

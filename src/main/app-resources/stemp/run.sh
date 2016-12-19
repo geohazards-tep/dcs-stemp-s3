@@ -69,9 +69,15 @@ function main() {
   local extent=0.3
   cropped_dem=$( cropDem "${dem_geotiff}" "${PROCESSING_HOME}" "${v_lon}" "${v_lat}" "${extent}" ) || return ${ERR_CROP_DEM}
   ciop-log "INFO" "------------------------------------------------------------"
-
-  ciop-log "INFO" "Getting input product"
-  product=$( getData "${ref}" "${PROCESSING_HOME}" ) || return ${ERR_GET_DATA}
+  
+  if [ ${LOCAL_DATA} == "true" ]; then
+    ciop-log "INFO" "Getting local input product"
+    cp /data/SCIHUB/${identifier}.zip ${PROCESSING_HOME}
+  else  
+    ciop-log "INFO" "Getting remote input product"
+    product=$( getData "${ref}" "${PROCESSING_HOME}" ) || return ${ERR_GET_DATA}
+  fi
+  
   ciop-log "INFO" "Input product downloaded"
   ciop-log "INFO" "------------------------------------------------------------"
 

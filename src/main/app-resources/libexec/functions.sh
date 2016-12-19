@@ -18,6 +18,9 @@ ERR_DATA_NOT_FOUND=18
 ERR_UNCOMP=254
 ERR_PUBLISH=255
 
+LOCAL_DATA="true"
+DEBUG="false"
+
 # add a trap to exit gracefully
 function cleanExit () {
   
