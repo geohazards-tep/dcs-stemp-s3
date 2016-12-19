@@ -22,7 +22,8 @@ function main() {
   local volcano=$7
   local geom=$8
   # UTM_ZONE variable comes from the dcs-stemp-l8 application. In this case we get the UTM_ZONE from the volcanoes DB.
-  local UTM_ZONE=$9
+  local utm_zone=$9
+  UTM_ZONE=${utm_zone%%*( )}
 
   local v_lon=$( echo "${geom}" | sed -n 's#POINT(\(.*\)\s.*)#\1#p')
   local v_lat=$( echo "${geom}" | sed -n 's#POINT(.*\s\(.*\))#\1#p')
@@ -37,7 +38,7 @@ function main() {
   ciop-log "INFO" "Reference atmospheric station: ${station}, ${region}"
   ciop-log "INFO" "Volcano name: ${volcano}"
   ciop-log "INFO" "Geometry in WKT format: ${geom}"
-  ciop-log "INFO" "UTM Zone: ${utm_zone}"
+  ciop-log "INFO" "UTM Zone: ${UTM_ZONE}"
   ciop-log "INFO" "------------------------------------------------------------"
 
   ciop-log "INFO" "Preparing the STEMP environment"
@@ -123,20 +124,24 @@ function main() {
     n_s="north"
   fi
   
-  ciop-log "INFO" "Converting product to UTM"
+  ciop-log "INFO" "Resampling product to 1km"
   ${SNAP_BIN}/gpt Resample -SsourceProduct=${product%*.zip}.SEN3/xfdumanifest.xml -Pdownsampling=First -PflagDownsampling=First -PreferenceBand=S9_BT_in -Pupsampling=Nearest -PresampleOnPyramidLevels=true -t  ${PROCESSING_HOME}/temp.dim
+  ciop-log "INFO" "Selecting bands B8,B9 from product"
   ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/temp_res.dim
+  ciop-log "INFO" "Reprojecting product from lat,lon to WSG84"
   ${SNAP_BIN}/gpt Reproject -Ssource=${PROCESSING_HOME}/temp_res.dim -Pcrs=AUTO:42001 -Presampling=Nearest -t ${PROCESSING_HOME}/temp_rip.dim
+  ciop-log "INFO" "Converting product to GeoTIFF format"
   ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp_rip.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/${identifier:0:31} -f GeoTiff
-  gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +${n_s} +datum=WGS84"  ${PROCESSING_HOME}/${identifier:0:31}.tif ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}.tif
+  ciop-log "INFO" "Converting product to UTM zone ${UTM_ZONE} ${n_s}"
+  gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +${n_s} +datum=WGS84"  ${PROCESSING_HOME}/${identifier:0:31}.tif ${PROCESSING_HOME}/${identifier:0:31}_UTM.tif
   
   # temp TODO
   ls ${PROCESSING_HOME}
   
-  ciop-log "INFO" "Converting product to 1km resolution"
-  gdalwarp -tr 1000 -1000 ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}.tif ${PROCESSING_HOME}/${identifier:0:31}_${UTM_ZONE}${n_s}${volcano}_1km.TIF
+  ciop-log "INFO" "Converting product from current resolution to 1km resolution"
+  gdalwarp -tr 1000 -1000 ${PROCESSING_HOME}/${identifier:0:31}_UTM.tif ${PROCESSING_HOME}/${identifier:0:31}_UTM_${volcano}_1km.TIF
   
-  ciop-log "INFO" "Converting DEM to proper UTM Zone"
+  ciop-log "INFO" "Converting DEM to UTM zone ${UTM_ZONE} ${n_s}"
   gdalwarp -t_srs "+proj=utm +zone=${UTM_ZONE} +${n_s} +datum=WGS84" ${cropped_dem} ${PROCESSING_HOME}/dem_UTM.TIF 1>&2
 
   ciop-log "INFO" "Setting DEM resolution to 1km"
@@ -144,7 +149,7 @@ function main() {
   ciop-log "INFO" "------------------------------------------------------------"
 
   ciop-log "INFO" "Preparing file_input.cfg"
-  echo "${identifier:0:31}_${UTM_ZONE}${n_s}${volcano}_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
+  echo "${identifier:0:31}_UTM_${volcano}_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
 
   basename ${profile} >> ${PROCESSING_HOME}/file_input.cfg
   echo "dem_UTM_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
@@ -162,10 +167,10 @@ function main() {
 
   if [ "${DEBUG}" = "true" ]; then
     ciop-publish -m ${PROCESSING_HOME}/*.TIF || return $?
+    ciop-publish -m ${PROCESSING_HOME}/*.tif || return $?
     ciop-publish -m ${PROCESSING_HOME}/*txt || return $?
     ciop-publish -m ${PROCESSING_HOME}/*hdf || return $?
     ciop-publish -m ${PROCESSING_HOME}/dem* || return $?
-    ciop-publish -m ${PROCESSING_HOME}/*${volcano}.tif || return $?
   fi
 
   ciop-log "INFO" "Starting STEMP core"
