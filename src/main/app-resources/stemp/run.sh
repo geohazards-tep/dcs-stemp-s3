@@ -72,7 +72,7 @@ function main() {
   
   if [ ${LOCAL_DATA} == "true" ]; then
     ciop-log "INFO" "Getting local input product"
-    cp /data/SCIHUB/${identifier}.zip ${PROCESSING_HOME}
+    product=$( ciop-copy -f -U -O ${PROCESSING_HOME} /data/SCIHUB/${identifier}.zip)
   else  
     ciop-log "INFO" "Getting remote input product"
     product=$( getData "${ref}" "${PROCESSING_HOME}" ) || return ${ERR_GET_DATA}
