@@ -32,7 +32,7 @@ function main() {
   local startdate="$(ciop-getparam startdate)"
   local enddate="$(ciop-getparam enddate)"
   local volcano="$(ciop-getparam volcano)"
-  local mission="$(ciop-getparam mission)"
+  local mission="sentinel3"
 
   [ -z ${startdate} ] && exit $ERR_PARAM
   [ -z ${enddate} ] && exit $ERR_PARAM
@@ -60,7 +60,7 @@ function main() {
   opensearch-client \
     -p "start=${startdate}" \
     -p "stop=${enddate}" \
-    "https://data2.terradue.com/eop/${mission,,}/dataset/search?geom=${geom}" \
+    "https://catalog.terradue.com/${mission,,}/search?geom=${geom}" \
     self,identifier,enddate | tr "," " " > ${TMPDIR}/opensearch_response.txt
   res=$?
   [ ${res} -ne 0 ] && return ${ERR_GET_DATA}

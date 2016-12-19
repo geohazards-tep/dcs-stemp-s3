@@ -1,1 +1,1 @@
-volcano name,lon,lat[,station id,region,utm_zone]
+volcano name,lon,lat,utm_zone[,station id,region]
