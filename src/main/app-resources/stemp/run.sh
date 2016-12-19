@@ -124,7 +124,7 @@ function main() {
   fi
   
   ciop-log "INFO" "Converting product to UTM"
-  ${SNAP_BIN}/gpt Resample -SsourceProduct=${product}/xfdumanifest.xml -Pdownsampling=First -PflagDownsampling=First -PreferenceBand=S9_BT_in -Pupsampling=Nearest -PresampleOnPyramidLevels=true -t  ${PROCESSING_HOME}/temp.dim
+  ${SNAP_BIN}/gpt Resample -SsourceProduct=${product%*.zip}.SEN3/xfdumanifest.xml -Pdownsampling=First -PflagDownsampling=First -PreferenceBand=S9_BT_in -Pupsampling=Nearest -PresampleOnPyramidLevels=true -t  ${PROCESSING_HOME}/temp.dim
   ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/temp_res.dim
   ${SNAP_BIN}/gpt Reproject -Ssource=${PROCESSING_HOME}/temp_res.dim -Pcrs=AUTO:42001 -Presampling=Nearest -t ${PROCESSING_HOME}/temp_rip.dim
   ${SNAP_BIN}/gpt Subset -Ssource=${PROCESSING_HOME}/temp_rip.dim -PcopyMetadata=true -PsourceBands=S8_BT_in,S9_BT_in -t ${PROCESSING_HOME}/${identifier:0:31} -f GeoTiff
@@ -163,6 +163,7 @@ function main() {
   if [ "${DEBUG}" = "true" ]; then
     ciop-publish -m ${PROCESSING_HOME}/*.TIF || return $?
     ciop-publish -m ${PROCESSING_HOME}/*txt || return $?
+    ciop-publish -m ${PROCESSING_HOME}/*hdf || return $?
     ciop-publish -m ${PROCESSING_HOME}/dem* || return $?
     ciop-publish -m ${PROCESSING_HOME}/*${volcano}.tif || return $?
   fi
