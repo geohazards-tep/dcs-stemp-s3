@@ -1,10 +1,10 @@
 arenal,-84.7031,10.4625
 chachimbiro,-78.2870,0.4680
-colima,-103.6200,19.5140
+colima,-103.6200,19.5140,13
 cotacachi,-78.3486,0.3608
 cotopaxi,-78.4360,-0.6770
 dukono,127.8940,1.6930
-etna,14.9934,37.7510,16429,europe
+etna,14.9934,37.7510,16429,europe,33
 ibu,127.6300,1.4880
 la cumbre fernandina,-91.5500,-0.3700
 merapi,110.4420,-7.5420
@@ -16,7 +16,7 @@ sangai,-78.3410,-2.0050
 santiaguito,-91.5681,14.7394
 sierra negra,-91.1292,-0.8178
 sinabung,98.3906,3.1710
-stromboli,15.2130,38.7890,16429,europe
+stromboli,15.2130,38.7890,16429,europe,33
 tungurahua,-78.4420,-1.460
 turrialba,-83.7639,10.0183
 vesuvio campi flegrei,14.1390,40.8270,16245,europe
