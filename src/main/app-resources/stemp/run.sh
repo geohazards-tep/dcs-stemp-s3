@@ -102,7 +102,7 @@ function main() {
 
   ciop-log "INFO" "Getting the emissivity file and spectral response functions"
   ciop-log "INFO" "${EMISSIVITY_AUX_PATH}/${volcano}.tif"
-  cp ${EMISSIVITY_AUX_PATH}/${volcano}.tif ${PROCESSING_HOME}
+  cp ${EMISSIVITY_AUX_PATH}/default.tif ${PROCESSING_HOME}/${volcano}.tif
   cp ${EMISSIVITY_AUX_PATH}/*.txt ${PROCESSING_HOME}
 
   ciop-log "INFO" "------------------------------------------------------------"
@@ -136,10 +136,6 @@ function main() {
   ciop-log "INFO" "Setting DEM resolution to 1km"
   gdalwarp -tr 1000 -1000 ${PROCESSING_HOME}/dem_UTM.TIF ${PROCESSING_HOME}/dem_UTM_1km.TIF 1>&2
   ciop-log "INFO" "------------------------------------------------------------"
-  
-  ciop-log "INFO" "Copying Sentinel 3 instrument response function"
-  
-  cp ${EMISSIVITY_AUX_PATH}/SRF_S3_CH8-9.txt ${PROCESSING_HOME}
 
   ciop-log "INFO" "Preparing file_input.cfg"
   echo "${identifier:0:31}_${UTM_ZONE}${n_s}${volcano}_1km.TIF" >> ${PROCESSING_HOME}/file_input.cfg
