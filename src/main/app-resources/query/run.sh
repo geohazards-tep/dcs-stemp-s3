@@ -56,7 +56,7 @@ function main() {
   ciop-log "INFO" "Nearest atmosferic station: ${station},${region}"
   ciop-log "INFO" "Geometry in WKT: ${geom}"
 
-  ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://data2.terradue.com/eop/${mission,,}/dataset/search?geom=${geom}\""
+  ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://catalog.terradue.com/${mission,,}/search?geom=${geom}\""
  
   opensearch-client \
     -p "start=${startdate}" \
