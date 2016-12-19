@@ -201,7 +201,7 @@ function main() {
   echo "Satellite=Sentinel3" >> ${METAFILE}
   echo "#STEMP Parameters" >> ${METAFILE}
   echo "Emissivity=Computed with TES algorithm"  >> ${METAFILE}
-  echo "Atmospheric\ Profile=${profile}"  >> ${METAFILE}
+  echo "Atmospheric\ Profile=$( basename ${profile} )"  >> ${METAFILE}
   echo "DEM\ Spatial\ Resolution=1Km"  >> ${METAFILE}
   echo "Temperature\ Unit=degree" >> ${METAFILE}
   echo "#EOF"  >> ${METAFILE}
