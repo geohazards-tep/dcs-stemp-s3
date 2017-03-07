@@ -6,6 +6,7 @@ export LM_LICENSE_FILE=1700@idl.terradue.com
 export MODTRAN_BIN=/opt/MODTRAN-5.4.0
 #export STEMP_BIN=/opt/STEMP/bin
 export STEMP_BIN=/data/code/code_S3
+export STEMP_BINclass=/data/test_l8_class
 export SNAP_BIN=/opt/snap-5.0/bin
 export IDL_BIN=/usr/local/bin
 export PROCESSING_HOME=${TMPDIR}/PROCESSING
@@ -174,6 +175,7 @@ function main() {
 
   ciop-log "INFO" "Starting STEMP core"
   ${IDL_BIN}/idl -rt=${STEMP_BIN}/STEMP_S3.sav -IDL_DEVICE Z
+  ${IDL_BIN}/idl -rt=${STEMP_BINclass}/classificazione.sav -IDL_DEVICE Z
 
   ciop-log "INFO" "STEMP core finished"
   ciop-log "INFO" "------------------------------------------------------------"
@@ -183,14 +185,14 @@ function main() {
   cd ${PROCESSING_HOME}
   string_inp=$(head -n 1 file_input.cfg)
   leng=${#string_inp}
-  generateQuicklook ${PROCESSING_HOME}/${string_inp:0:leng-4}_TEMP.tif ${PROCESSING_HOME}
+  generateQuicklook ${PROCESSING_HOME}/${string_inp:0:leng-4}_TEMPclass.tif ${PROCESSING_HOME}
 
   ciop-log "INFO" "Quicklooks generated:"
-  ls -l ${PROCESSING_HOME}/*TEMP.png* 1>&2
+  ls -l ${PROCESSING_HOME}/*TEMP*.png* 1>&2
   ciop-log "INFO" "------------------------------------------------------------"
   
   METAFILE=${PROCESSING_HOME}/${string_inp:0:leng-4}_TEMP.tif.properties
-  DATETIME=${string_inp:3:4}-${string_inp:7:2}-${string_inp:9:5}:${string_inp:14:2}:${string_inp:16:2}
+  DATETIME=${string_inp:16:4}-${string_inp:20:2}-${string_inp:22:2}T${string_inp:25:2}:${string_inp:27:2}:${string_inp:29:2}
 
   echo "#Predefined Metadata" >> ${METAFILE}
   echo "title=STEMP - Surface Temperature Map" >> ${METAFILE}
@@ -204,11 +206,12 @@ function main() {
   echo "Atmospheric\ Profile=$( basename ${profile} )"  >> ${METAFILE}
   echo "DEM\ Spatial\ Resolution=1Km"  >> ${METAFILE}
   echo "Temperature\ Unit=degree" >> ${METAFILE}
+  image_url= https://store.terradue.com/api/ingv-stemp/images/paletta.png
   echo "#EOF"  >> ${METAFILE}
   
   ciop-log "INFO" "Staging-out results ..."
-  ciop-publish -m ${PROCESSING_HOME}/*TEMP.tif || return $?
-  ciop-publish -m ${PROCESSING_HOME}/*TEMP.png* || return $?
+  ciop-publish -m ${PROCESSING_HOME}/*TEMP*.tif || return $?
+  ciop-publish -m ${PROCESSING_HOME}/*TEMP*.png* || return $?
   ciop-publish -m ${METAFILE} || return $?
   ciop-publish -m ${PROCESSING_HOME}/*hdf || return $?
   [ ${res} -ne 0 ] && return ${ERR_PUBLISH}
