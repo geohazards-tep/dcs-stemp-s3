@@ -40,6 +40,7 @@ function main() {
   ciop-log "INFO" "Volcano name: ${volcano}"
   ciop-log "INFO" "Geometry in WKT format: ${geom}"
   ciop-log "INFO" "UTM Zone: ${UTM_ZONE}"
+  ciop-log "INFO" "identifier: ${identifier}"
   ciop-log "INFO" "------------------------------------------------------------"
 
   ciop-log "INFO" "Preparing the STEMP environment"
@@ -77,13 +78,14 @@ function main() {
     product=$( ciop-copy -f -U -O ${PROCESSING_HOME} /data/SCIHUB/${identifier}.zip)
   else  
     ciop-log "INFO" "Getting remote input product"
+    ciop-log "INFO" "data ${ref}"
     product=$( getData "${ref}" "${PROCESSING_HOME}" ) || return ${ERR_GET_DATA}
   fi
   
   ciop-log "INFO" "Input product downloaded"
   ciop-log "INFO" "------------------------------------------------------------"
 
-  ciop-log "INFO" "Uncompressing product"
+  ciop-log "INFO" "Uncompressing product: ${product} "
 
   case ${product##*.} in
     zip)
@@ -175,7 +177,7 @@ function main() {
 
   ciop-log "INFO" "Starting STEMP core"
   ${IDL_BIN}/idl -rt=${STEMP_BIN}/STEMP_S3.sav -IDL_DEVICE Z
-  ${IDL_BIN}/idl -rt=${STEMP_BINclass}/classificazione.sav -IDL_DEVICE Z
+#  ${IDL_BIN}/idl -rt=${STEMP_BINclass}/classificazione.sav -IDL_DEVICE Z
 
   ciop-log "INFO" "STEMP core finished"
   ciop-log "INFO" "------------------------------------------------------------"
@@ -206,7 +208,7 @@ function main() {
   echo "Atmospheric\ Profile=$( basename ${profile} )"  >> ${METAFILE}
   echo "DEM\ Spatial\ Resolution=1Km"  >> ${METAFILE}
   echo "Temperature\ Unit=degree" >> ${METAFILE}
-  image_url= https://store.terradue.com/api/ingv-stemp/images/paletta.png
+  echo "image_url=https://store.terradue.com/api/ingv-stemp/images/colorbar-stemp-s3.png" >> ${METAFILE}
   echo "#EOF"  >> ${METAFILE}
   
   ciop-log "INFO" "Staging-out results ..."
