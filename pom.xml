@@ -49,7 +49,7 @@
                   <requires>
                     <require>idl</require>
                     <require>miniconda</require>
-                    <require>snap-5.0</require>
+                    <require>snap</require>
                     <require>MODTRAN</require>
                     <require>STEMP-S3</require>
                   </requires>
