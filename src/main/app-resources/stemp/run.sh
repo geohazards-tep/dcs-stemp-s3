@@ -4,9 +4,7 @@ source /application/libexec/functions.sh
 
 export LM_LICENSE_FILE=1700@idl.terradue.com
 export MODTRAN_BIN=/opt/MODTRAN-5.4.0
-#export STEMP_BIN=/opt/STEMP/bin
-export STEMP_BIN=/data/code/code_S3
-export STEMP_BINclass=/data/test_l8_class
+export STEMP_BIN=/opt/STEMP-S3/bin
 export SNAP_BIN=/opt/snap-5.0/bin
 export IDL_BIN=/usr/local/bin
 export PROCESSING_HOME=${TMPDIR}/PROCESSING
@@ -177,7 +175,6 @@ function main() {
 
   ciop-log "INFO" "Starting STEMP core"
   ${IDL_BIN}/idl -rt=${STEMP_BIN}/STEMP_S3.sav -IDL_DEVICE Z
-#  ${IDL_BIN}/idl -rt=${STEMP_BINclass}/classificazione.sav -IDL_DEVICE Z
 
   ciop-log "INFO" "STEMP core finished"
   ciop-log "INFO" "------------------------------------------------------------"
