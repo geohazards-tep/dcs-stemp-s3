@@ -50,6 +50,7 @@
                     <require>idl</require>
                     <require>snap-5.0</require>
                     <require>MODTRAN</require>
+                    <require>STEMP-S3</require>
                   </requires>
                 </configuration>
               </execution>
