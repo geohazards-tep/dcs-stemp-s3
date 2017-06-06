@@ -18,7 +18,7 @@ ERR_DATA_NOT_FOUND=18
 ERR_UNCOMP=254
 ERR_PUBLISH=255
 
-LOCAL_DATA="true"
+LOCAL_DATA="false"
 DEBUG="true"
 
 # add a trap to exit gracefully
@@ -50,7 +50,7 @@ function getDem() {
   local geom=$1 
   local target=$2
 
-  endpoint="http://dem-90m-wkt.platform.terradue.int:8080/wps/WebProcessingService" 
+  endpoint="http://dem-90m-wkt-platform.terradue.com/wps/WebProcessingService" 
 
   ciop-log "INFO" "[getDem function] DEM WPS service endpoint: ${endpoint} "
   ciop-log "INFO" "[getDem function] WTK input: ${geom} "
@@ -183,15 +183,26 @@ function getData() {
   local enclosure
   local res
 
+  ciop-log "INFO" "[getData function] alcune info ${ref}, ${ref:0:4}, ${ref:0:1}"
+  ciop-log "INFO" "[getData function] target ${target}"
   if [ "${ref:0:4}" == "file" ] || [ "${ref:0:1}" == "/" ]; then
     enclosure=${ref}
   else
-    enclosure=$( urlResolver "${ref}" )
+  ciop-log "INFO" "[getData function] prima dell'enclosure url: ${ref}"
+      url=$( opensearch-client "${ref}" enclosure )
+  res=$?
+
+  ciop-log "INFO" "[getData function] url file db return code: ${res}"
+  [ ${res} -ne 0 ] && return ${res}
+#    enclosure=$( urlResolver "${ref}" )
+     enclosure=${url}
+#  enclosure="https://store.terradue.com/download/sentinel3/files/v1/S3A_SL_1_RBT____20170301T092757_20170301T093057_20170302T190516_0180_015_036_2159_LN2_O_NT_002"
+  ciop-log "INFO" "[getData function] dopo dell'enclosure url: ${enclosure}"
     res=$?
     [ "${res}" -ne "0" ] && ${ERR_GETDATA}
   fi
 
-  ciop-log "INFO" "[getData function] Data enclosure url: ${enclosure}"
+  ciop-log "INFO" "[getData function] Data enclosure url dopo l'if : ${enclosure}"
   
   local_file="$( echo ${enclosure} | ciop-copy -f -U -O ${target} - 2> /dev/null )"
   res=$?
@@ -279,13 +290,16 @@ function getRas() {
 function urlResolver() {
 
   local url=""
+#  local url
   local reference="$1"
   
   # Managing the special case for Landsat8, where we get data directly from
   # Google
   landsat8=$( echo "${reference}" | grep "landsat8" )
   
+  ciop-log "INFO" "[urlResolver function] reference ${reference}"
   if [ -n "${landsat8}" ]; then
+  ciop-log "INFO" "[urlResolver function] step landsat8 ${reference}"
     read identifier path < <( opensearch-client -m EOP  "${reference}" identifier,wrsLongitudeGrid | tr "," " " )
     [ -z "${path}" ] && path="$( echo ${identifier} | cut -c 4-6)"
     row="$( echo ${identifier} | cut -c 7-9)"
@@ -295,8 +309,13 @@ function urlResolver() {
 
     echo "${url}"
   else
+  ciop-log "INFO" "[urlResolver function] step sentinel ${reference}"
+  ciop-log "INFO" "[urlResolver function]  dentro if prima dell'url ${reference}"
     url=$( opensearch-client "${reference}" enclosure )
-    res=$?
-    [ "${res}" -ne "0" ] && return ${res}
+  ciop-log "INFO" "[urlResolver function]  dentro if dopo url  ${url}"
+     res=$?
+  ciop-log "INFO" "[urlResolver function]  variabile res  ${res}"
+     [ "${res}" -ne "0" ] && return ${res}
   fi
+  ciop-log "INFO" "[urlResolver function]  uscita dall'urlResolver ${url}"
 }
