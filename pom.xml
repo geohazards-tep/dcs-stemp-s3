@@ -51,6 +51,7 @@
                     <require>idl</require>
                     <require>miniconda</require>
                     <require>snap</require>
+                    <require>openjpeg2</require>
                     <require>MODTRAN</require>
                     <require>STEMP-S3</require>
                   </requires>
