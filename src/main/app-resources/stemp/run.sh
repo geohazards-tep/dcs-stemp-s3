@@ -232,7 +232,6 @@ while IFS=',' read ref identifier mission date station region volcano geom utm_z
 do
    if [ "${identifier:0:10}" = "S3A_SL_1_R" ]; then
 
-  ciop-log " STAMPA ${identifier:0:8}"
     main "${ref}" "${identifier}" "${mission}" "${date}" "${station}" "${region}" "${volcano}" "${geom}" "${utm_zone}" || exit $?
    fi
 done
