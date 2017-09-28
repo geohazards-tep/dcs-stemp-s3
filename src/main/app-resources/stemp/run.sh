@@ -212,11 +212,6 @@ function main() {
   ciop-publish -m ${PROCESSING_HOME}/*TEMP*.tif || return $?
   ciop-publish -m ${PROCESSING_HOME}/*TEMP*.png* || return $?
   ciop-publish -m ${METAFILE} || return $?
-<<<<<<< HEAD
-#  ciop-publish -m ${PROCESSING_HOME}/*hdf || return $?
-=======
-  #ciop-publish -m ${PROCESSING_HOME}/*hdf || return $?
->>>>>>> 0031c630b353937a663d24ffd8daf565f21eeac9
   [ ${res} -ne 0 ] && return ${ERR_PUBLISH}
 
   ciop-log "INFO" "Results staged out"
