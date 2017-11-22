@@ -190,7 +190,7 @@ function getData() {
     enclosure=${ref}
   else
   ciop-log "INFO" "[getData function] prima dell'enclosure url: ${ref}"
-      url=$( opensearch-client "${ref}" enclosure )
+      url=$( opensearch-client -p do=terradue "${ref}" enclosure )
   res=$?
 
   ciop-log "INFO" "[getData function] url file db return code: ${res}"
