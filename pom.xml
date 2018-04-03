@@ -54,6 +54,7 @@
                     <require>openjpeg2</require>
                     <require>MODTRAN</require>
                     <require>STEMP-S3</require>
+                    <require>libgeotiff</require>
                   </requires>
                 </configuration>
               </execution>
