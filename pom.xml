@@ -11,7 +11,7 @@
     <version>2.0.0</version>
   </parent>
   <description>dcs-stemp-s3</description>
-  <version>1.0.5-SNAPSHOT</version>
+  <version>1.0.5</version>
   <properties>
     <summary>dcs-stemp-s3</summary>
     <description>dcs-stemp-s3</description>
