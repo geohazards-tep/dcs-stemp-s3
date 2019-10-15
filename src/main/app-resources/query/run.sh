@@ -75,12 +75,12 @@ function main() {
     
   else
     
-    ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://catalog.terradue.com/${mission,,}/search?geom=${geom}&q=S3A_SL*\""
+    ciop-log "INFO" "Opensearch query: opensearch-client -p \"start=${startdate}\" -p \"stop=${enddate}\" \"https://catalog.terradue.com/${mission,,}/search?geom=${geom}&q=S3A_SL_1_RBT*\""
  
     opensearch-client \
       -p "start=${startdate}" \
       -p "stop=${enddate}" \
-      "https://catalog.terradue.com/${mission,,}/search?geom=${geom}&q=S3A_SL*" \
+      "https://catalog.terradue.com/${mission,,}/search?geom=${geom}&q=S3A_SL_1_RBT*" \
       self,identifier,enddate | tr "," " " > ${TMPDIR}/opensearch_response.txt
     res=$?
     [ ${res} -ne 0 ] && return ${ERR_GET_DATA}
