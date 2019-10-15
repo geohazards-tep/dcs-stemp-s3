@@ -80,6 +80,7 @@ function main() {
     opensearch-client \
       -p "start=${startdate}" \
       -p "stop=${enddate}" \
+      -p "count=1000" \
       "https://catalog.terradue.com/${mission,,}/search?geom=${geom}&q=S3A_SL_1_RBT*" \
       self,identifier,enddate | tr "," " " > ${TMPDIR}/opensearch_response.txt
     res=$?
